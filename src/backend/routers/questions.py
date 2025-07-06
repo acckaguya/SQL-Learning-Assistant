@@ -75,6 +75,15 @@ def get_questions(
         return crud.get_questions_by_knowledge_point(db, point)
     return crud.get_questions(db)
 
+# 根据question_id查找question
+@router.get("/get/{question_id}", response_model=schemas.Question)
+def get_question_by_is(
+        db: Session = Depends(get_db),
+        question_id: str = None
+):
+    return crud.get_question(db, question_id)
+
+
 @router.get("/get/random", response_model=schemas.Question)
 def get_random_question(
     point: str = None,  # 参数名改为point，类型为str

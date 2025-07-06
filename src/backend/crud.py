@@ -23,7 +23,6 @@ def create_user(db: Session, user: schemas.UserCreate, hash_func):
     db.refresh(db_user)
     return db_user
 
-
 def execute_sql_with_current_connection(db: Session, sql_statements: str):
     try:
         # 使用SQLAlchemy的原始连接执行
@@ -34,7 +33,6 @@ def execute_sql_with_current_connection(db: Session, sql_statements: str):
         return True, None
     except Exception as e:
         return False, str(e)
-
 
 def create_schema(db: Session, schema: schemas.SampleSchemaCreate):
     try:
@@ -136,10 +134,6 @@ def update_question(db: Session, question_id: str, question: schemas.QuestionCre
         db.refresh(db_question)
     return db_question
 
-def get_questions_by_tag(db: Session, tag_index: int):
-    tag_column = f"tag_{tag_index}"
-    return db.query(models.Question).filter(getattr(models.Question, tag_column) == True).all()
-
 def get_questions_by_knowledge_point(db: Session, point_name: str):
     """根据具体知识点名称查询题目"""
     point_mapping = {
@@ -157,7 +151,6 @@ def get_questions_by_knowledge_point(db: Session, point_name: str):
     if point_name in point_mapping:
         return db.query(models.Question).filter(point_mapping[point_name] == True).all()
     return None
-
 
 def get_random_question(db: Session, point_name: str = None):
     query = db.query(models.Question)
@@ -209,12 +202,6 @@ def get_schemas(db: Session, skip: int = 0, limit: int = 100):
 
 def get_questions(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Question).offset(skip).limit(limit).all()
-
-def get_questions_by_tag(db: Session, tag_index: int, skip: int = 0, limit: int = 100):
-    tag_column = f"tag_{tag_index}"
-    return db.query(models.Question).filter(
-        getattr(models.Question, tag_column) == True
-    ).offset(skip).limit(limit).all()
 
 def delete_question(db: Session, question_id: str):
     question = db.query(models.Question).filter(models.Question.question_id == question_id).first()

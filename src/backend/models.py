@@ -28,7 +28,6 @@ class Question(Base):
     question_id = Column(String, primary_key=True, index=True)
     description = Column(Text)
     answer_sql = Column(Text)
-    # 将原有的通用标签改为具体知识点标签
     basic_query = Column(Boolean, default=False)                            # 知识点1: 基础查询
     where_clause = Column(Boolean, default=False)                           # 知识点2: 条件查询
     aggregation = Column(Boolean, default=False)                            # 知识点3: 聚合函数
@@ -39,7 +38,7 @@ class Question(Base):
     subqueries = Column(Boolean, default=False)                             # 知识点8: 子查询
     null_handling = Column(Boolean, default=False)                          # 知识点9: NULL处理
     execution_order = Column(Boolean, default=False)                        # 知识点10: 执行顺序
-    order_sensitive = Column(Boolean, default=False)                        #顺序敏感标识
+    order_sensitive = Column(Boolean, default=False)                        # 顺序敏感标识
     schema_id = Column(String, ForeignKey("sample_schemas.schema_id"))
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
@@ -54,7 +53,7 @@ class Attempt(Base):
     question_id = Column(String, ForeignKey("questions.question_id"))
     student_sql = Column(Text)
     is_correct = Column(Boolean)
-    error_type = Column(String)  # "syntax_error", "logic_error", "result_mismatch"
+    error_type = Column(String)
     submitted_at = Column(DateTime)
     
     user = relationship("User")
