@@ -1,0 +1,79 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
+from src.backend import crud, schemas, llm_utils, validators
+from src.backend.database import get_db
+from src.backend.security import get_current_user
+from src.backend.config import settings
+
+router = APIRouter()
+
+# 提交答案
+@router.post("/submit", response_model=schemas.Attempt)
+def submit_answer(
+        attempt_submit: schemas.AttemptSubmit,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(get_current_user)
+):
+    question = crud.get_question(db, attempt_submit.question_id)
+    schema = crud.get_schema(db, question.schema_id)
+
+    # 更新验证调用，添加顺序敏感参数
+    validation_result = validators.validate_sql(
+        student_sql=attempt_submit.student_sql,
+        answer_sql=question.answer_sql,
+        schema_definition=schema.schema_definition,
+        schema_name=schema.schema_name,
+        order_sensitive=question.order_sensitive  # 传递顺序敏感标志
+    )
+
+    # 创建练习记录
+    db_attempt = crud.create_attempt(db, schemas.AttemptCreate(
+        user_id=current_user.user_id,
+        question_id=attempt_submit.question_id,
+        student_sql=attempt_submit.student_sql,
+        is_correct=validation_result.is_correct,
+        error_type=validation_result.error_type,
+        result_diff=validation_result.result_diff
+    ))
+    return db_attempt
+
+# 获取练习历史
+@router.get("/history", response_model=List[schemas.Attempt])
+def get_attempt_history(
+    user_id: str = None,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_user)
+):
+    # 学生只能查看自己的历史
+    if current_user.role == "student":
+        user_id = current_user.user_id
+    return crud.get_user_attempts(db, user_id)
+
+# 获取错题本
+@router.get("/mistakes", response_model=list[schemas.Question])
+def get_mistake_questions(
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_user)
+):
+    # 学生只能查看自己的错题
+    if current_user.role == "student":
+        return crud.get_user_mistake_questions(db, current_user.user_id)
+    
+    # 教师可以查看所有错题
+    return crud.get_all_mistake_questions(db)
+
+@router.get("/by_question/{question_id}", response_model=List[schemas.Attempt])
+def get_attempts_by_question(
+    question_id: str,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_user)
+):
+    """
+    获取当前用户对指定题目的所有尝试记录
+    """
+    return crud.get_attempts_by_question_and_user(
+        db,
+        question_id=question_id,
+        user_id=current_user.user_id
+    )
