@@ -51,8 +51,9 @@ def generate_question(
 
     # 创建题目并关联知识点
     question_data = {
-        "description": generated["description"],
-        "answer_sql": generated["answer_sql"],
+        "question_title": generated['question_title'],
+        "description": generated['description'],
+        "answer_sql": generated['answer_sql'],
         "schema_id": schema_id,
         **{point: True for point in knowledge_points}
     }

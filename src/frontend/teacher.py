@@ -87,6 +87,7 @@ def teacher_dashboard():
         if questions:
             df = pd.DataFrame([{
                 "ID": q["question_id"],
+                "标题": q["question_title"],
                 "描述": q["description"],
                 "知识点": ", ".join([
                     str(i + 1) for i, field in enumerate(knowledge_fields)
@@ -97,11 +98,15 @@ def teacher_dashboard():
             st.dataframe(df)
 
             # 题目操作
-            selected_id = st.selectbox("选择题目操作", [""] + [q["question_id"] for q in questions])
-            if selected_id:
+            question_options = [f"{q['question_id']} - {q['question_title']}" for q in questions]
+            selected_option = st.selectbox("选择题目操作", [""] + question_options)
+            if selected_option:
+                # 从选项字符串中提取题目ID
+                selected_id = selected_option.split(" - ")[0]
                 question = next((q for q in questions if q["question_id"] == selected_id), None)
                 if question:
                     st.subheader("题目详情")
+                    st.markdown(f"**{question['question_title']}**")
                     st.markdown(f"**描述**: {question['description']}")
                     st.code(question["answer_sql"], language="sql")
 
@@ -121,11 +126,13 @@ def teacher_dashboard():
                     )
 
                     # 更新题目
+                    update_question_title = st.text_area("题目标题", value=question["question_title"])
                     update_description = st.text_area("题目描述", value=question["description"], height=200)
                     update_answer_sql = st.text_area("参考答案", value=question["answer_sql"])
 
                     if st.button("更新题目"):
                         update_data = {
+                            "question_title": update_question_title,
                             "description": update_description,
                             "answer_sql": update_answer_sql,
                             "schema_id": question["schema_id"],

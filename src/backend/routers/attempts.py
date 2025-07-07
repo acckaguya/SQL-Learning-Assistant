@@ -18,13 +18,12 @@ def submit_answer(
     question = crud.get_question(db, attempt_submit.question_id)
     schema = crud.get_schema(db, question.schema_id)
 
-    # 更新验证调用，添加顺序敏感参数
     validation_result = validators.validate_sql(
         student_sql=attempt_submit.student_sql,
         answer_sql=question.answer_sql,
         schema_definition=schema.schema_definition,
         schema_name=schema.schema_name,
-        order_sensitive=question.order_sensitive  # 传递顺序敏感标志
+        order_sensitive=question.order_sensitive
     )
 
     # 创建练习记录

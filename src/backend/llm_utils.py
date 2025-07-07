@@ -7,6 +7,7 @@ import logging
 
 # 定义结构化输出模型
 class QuestionOutput(BaseModel):
+    question_title: str = Field(description="题目标题")
     description: str = Field(description="题目描述")
     answer_sql: str = Field(description="参考答案SQL语句")
 
@@ -20,7 +21,7 @@ class LLMHelper:
         )
         self.output_parser = JsonOutputParser(pydantic_object=QuestionOutput)
         self.logger = logging.getLogger("LLMHelper")
-        if not self.logger.handlers:  # 只添加一次handler
+        if not self.logger.handlers:
             handler = logging.StreamHandler()
             formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             handler.setFormatter(formatter)
@@ -37,18 +38,39 @@ class LLMHelper:
         # 构建多知识点prompt
         points_str = "、".join(knowledge_points)
         prompt_template = """
-            基于以下数据库模式:
-            {schema}
+        基于以下数据库模式:
+        {schema}
 
-            请生成一个包含以下知识点的SQL题目: {points}
-            要求:
-            1. 题目描述清晰明确
-            2. 难度适中
-            3. 参考答案语法正确
+        请生成一个包含以下知识点的SQL题目: {points}
+        要求:
+        1. 题目标题: 长度8-15字
+        2. 题目描述: 不少于30字，说明明确
+        3. 参考答案SQL: 完整可执行
+        4. 所有字段不能为空
 
-            输出格式:
-            {format_instructions}
-            """
+        输出格式:
+        {format_instructions}
+        
+        你是一位专业的SQL考试命题专家，请基于以下数据库模式设计一道综合性SQL考题：
+
+        ### 数据库模式
+        {schema}
+        
+        ### 命题要求
+        1. **题目深度**：必须综合考察以下所有知识点：{points}
+        2. **场景真实性**：题目需模拟真实业务场景（如电商分析/金融风控/用户行为追踪）
+        3. **参考答案SQL要求**：完整可执行
+        
+        ### 输出格式（严格执行）
+        {format_instructions}
+        
+        ### 验证清单（生成后自检）
+        - [ ] 题目标题是否清晰体现查询目标（8-15字）
+        - [ ] 题目描述是否包含：业务背景+数据难点+输出要求（≥30字）
+        - [ ] SQL答案是否包含：  
+          ▪️ 完整可执行语句  
+        - [ ] 所有字段是否100%完整（无空值）
+        """
 
         # 记录生成的prompt
         self.logger.debug("生成完整提示模板:")
@@ -73,6 +95,11 @@ class LLMHelper:
                 "points": points_str
             })
 
+            result['question_title'] = result.get('question_title') or "未命名题目"
+            result['description'] = result.get('description') or "题目描述生成失败"
+            result['answer_sql'] = result.get('answer_sql') or ""
+
+            self.logger.debug(f"生成题目标题: {result['question_title']}")
             self.logger.debug(f"生成题目描述: {result['description'][:50]}...")
             self.logger.debug(f"生成SQL语句: {result['answer_sql'][:50]}...")
 
@@ -81,6 +108,7 @@ class LLMHelper:
             # 添加错误处理
             self.logger.error(f"LLM调用失败: {str(e)}", exc_info=True)
             return {
+                "question_title": "生成失败",
                 "description": "题目生成失败，请重试",
                 "answer_sql": ""
             }

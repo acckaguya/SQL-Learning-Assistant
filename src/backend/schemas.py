@@ -63,8 +63,9 @@ class SampleSchema(SampleSchemaBase):
 
 class QuestionBase(BaseModel):
     """问题基类"""
-    description: str                        # 问题描述
-    answer_sql: str                         # 问题参考答案
+    question_title: str                     # 题目标题
+    description: str                        # 题目描述
+    answer_sql: str                         # 题目参考答案
     basic_query: bool = False               # 从此处开始往下为知识点tag
     where_clause: bool = False
     aggregation: bool = False

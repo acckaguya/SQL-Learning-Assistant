@@ -191,6 +191,7 @@ def create_question(db: Session, question: schemas.QuestionCreate):
     """
     db_question = models.Question(
         question_id=str(uuid.uuid4()),
+        question_title=question.question_title,
         description=question.description,
         answer_sql=question.answer_sql,
         basic_query=question.basic_query,

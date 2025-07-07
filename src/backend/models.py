@@ -29,6 +29,7 @@ class Question(Base):
     __tablename__ = "questions"
 
     question_id = Column(String, primary_key=True, index=True)              # 问题id（主码），自动生成
+    question_title = Column(Text)                                           # 题目标题
     description = Column(Text)                                              # 问题描述
     answer_sql = Column(Text)                                               # 参考答案
     basic_query = Column(Boolean, default=False)                            # 知识点1: 基础查询
