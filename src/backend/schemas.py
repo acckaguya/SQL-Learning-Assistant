@@ -102,6 +102,7 @@ class AttemptBase(BaseModel):
     is_correct: bool                        # 该次尝试是否正确
     error_type: Optional[str] = None        # 错误类型
     error_analysis: Optional[str] = None    # 错误分析
+    detailed_errors: Optional[List[dict]] = None  # 详细错误
 
 class AttemptSubmit(BaseModel):
     """提交答案（练习）"""
@@ -131,4 +132,4 @@ class SQLValidationResult(BaseModel):
     """提交的sql验证结果类"""
     is_correct: bool                        # 是否正确
     error_type: Optional[str] = None        # 错误类型
-    result_diff: Optional[str] = None       # 差异
+    detailed_errors: Optional[List[dict]] = None  # 详细错误信息

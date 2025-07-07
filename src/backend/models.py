@@ -59,6 +59,7 @@ class Attempt(Base):
     is_correct = Column(Boolean)                                            # 是否正确
     error_type = Column(String)                                             # 错误类型
     submitted_at = Column(DateTime)                                         # 提交日期
-    
+    detailed_errors = Column(JSONB)                                         # 详细错误信息
+
     user = relationship("User")                                             # 关联User
     question = relationship("Question")                                     # 关联Question

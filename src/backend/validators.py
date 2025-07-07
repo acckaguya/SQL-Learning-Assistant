@@ -5,6 +5,7 @@ from sql_metadata import Parser
 from sqlalchemy import create_engine, text, exc
 from src.backend.schemas import SQLValidationResult
 from src.backend.config import settings
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -277,10 +278,11 @@ def validate_sql(
                     """)).fetchall()
 
                     if diff_result:
+                        diff_dicts = [dict(row._mapping) for row in diff_result]
                         detailed_errors.append({
                             "error_type": "result_mismatch",
                             "message": "顺序不敏感模式结果不匹配",
-                            "differences": diff_result,
+                            "differences": diff_dicts,
                             "difference_count": len(diff_result)
                         })
                 except Exception as e:
@@ -289,6 +291,9 @@ def validate_sql(
                         "message": "结果比较失败",
                         "error": str(e)
                     })
+
+            if detailed_errors:
+                detailed_errors = convert_decimals(detailed_errors)
 
             # 最终结果判断
             if not detailed_errors:
@@ -312,3 +317,13 @@ def validate_sql(
             error_type="runtime_error",
             detailed_errors=detailed_errors
         )
+
+def convert_decimals(obj):
+    """递归将Decimal类型转换为float"""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    elif isinstance(obj, list):
+        return [convert_decimals(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: convert_decimals(value) for key, value in obj.items()}
+    return obj

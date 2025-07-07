@@ -350,6 +350,7 @@ def create_attempt(db: Session, attempt: schemas.AttemptCreate):
         student_sql=attempt.student_sql,
         is_correct=attempt.is_correct,
         error_type=attempt.error_type,
+        detailed_errors=attempt.detailed_errors,
         submitted_at=datetime.now()
     )
     db.add(db_attempt)

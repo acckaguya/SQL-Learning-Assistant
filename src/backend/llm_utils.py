@@ -16,7 +16,7 @@ class LLMHelper:
         self.llm = ChatOpenAI(
             api_key=api_key,
             base_url=base_url,
-            model="deepseek-chat",
+            model="deepseek-reasoner",
             temperature=0.5
         )
         self.output_parser = JsonOutputParser(pydantic_object=QuestionOutput)

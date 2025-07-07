@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
-from src.backend import crud, schemas, llm_utils, validators
+from src.backend import crud, schemas, validators
 from src.backend.database import get_db
 from src.backend.security import get_current_user
-from src.backend.config import settings
+
 
 router = APIRouter()
 
@@ -33,7 +33,7 @@ def submit_answer(
         student_sql=attempt_submit.student_sql,
         is_correct=validation_result.is_correct,
         error_type=validation_result.error_type,
-        result_diff=validation_result.result_diff
+        detailed_errors=validation_result.detailed_errors
     ))
     return db_attempt
 
