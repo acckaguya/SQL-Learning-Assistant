@@ -147,16 +147,8 @@ def student_dashboard():
                         # 详细错误展示
                         if result.get("detailed_errors"):
                             with st.expander("查看详细错误分析", expanded=True):
-                                # 使用列布局
-                                col1, col2 = st.columns([1, 1])
-
-                                with col1:
-                                    st.subheader("你的SQL")
-                                    st.code(student_sql, language="sql")
-
-                                with col2:
-                                    st.subheader("参考答案")
-                                    st.code(question["answer_sql"], language="sql")
+                                st.subheader("你的SQL")
+                                st.code(student_sql, language="sql")
 
                                 # 显示格式化后的错误详情
                                 formatted_errors = format_error_detail(
@@ -236,13 +228,8 @@ def student_dashboard():
                 # 展开详情
                 if expanded_attempt_id == attempt["attempt_id"]:
                     with st.expander("查看详情", expanded=True):
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.subheader("你的SQL")
-                            st.code(attempt["student_sql"], language="sql")
-                        with col2:
-                            st.subheader("参考答案")
-                            st.code(question.get("answer_sql", ""), language="sql")
+                        st.subheader("你的SQL")
+                        st.code(attempt["student_sql"], language="sql")
 
                         # 错误详情展示
                         if not attempt["is_correct"]:
@@ -278,8 +265,6 @@ def student_dashboard():
                         if schema:
                             st.markdown(display_schema_definition(schema["schema_definition"]))
 
-                    st.subheader("参考答案")
-                    st.code(question["answer_sql"], language="sql")
 
                     # 获取该题目的错误尝试记录
                     attempts = api_request(
