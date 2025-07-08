@@ -5,6 +5,7 @@ from src.backend import crud, schemas, llm_utils
 from src.backend.database import get_db
 from src.backend.security import get_current_user
 from src.backend.config import settings
+import src.backend.models as models
 
 router = APIRouter()
 
@@ -91,6 +92,45 @@ def get_random_question(
     db: Session = Depends(get_db)
 ):
     return crud.get_random_question(db, point)  # 传递知识点名称
+
+
+@router.post("/get/batch", response_model=List[schemas.Question])
+def get_questions_batch(
+        question_ids: list[str],
+        db: Session = Depends(get_db)
+):
+    # 1. 安全处理空值
+    if not question_ids:
+        return []
+
+    # 3. 查询数据库
+    questions = db.query(models.Question).filter(
+        models.Question.question_id.in_(question_ids)
+    ).all()
+
+    # 4. 转换为Pydantic模型
+    return [
+        schemas.Question(
+            question_id=q.question_id,
+            question_title=q.question_title,
+            description=q.description,
+            answer_sql=q.answer_sql,
+            basic_query=q.basic_query,
+            where_clause=q.where_clause,
+            aggregation=q.aggregation,
+            group_by=q.group_by,
+            order_by=q.order_by,
+            limit_clause=q.limit_clause,
+            joins=q.joins,
+            subqueries=q.subqueries,
+            null_handling=q.null_handling,
+            execution_order=q.execution_order,
+            order_sensitive=q.order_sensitive,
+            schema_id=q.schema_id,
+            created_at=q.created_at,
+            updated_at=q.updated_at
+        ) for q in questions
+    ]
 
 @router.put("/update/{question_id}", response_model=schemas.Question)
 def update_question(

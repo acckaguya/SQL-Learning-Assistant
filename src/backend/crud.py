@@ -369,6 +369,16 @@ def get_user_attempts(db: Session, user_id: str):
     """
     return db.query(models.Attempt).filter(models.Attempt.user_id == user_id).order_by(models.Attempt.submitted_at.desc()).all()
 
+def get_all_attempts(db: Session):
+    """
+    获取所有的练习记录
+    参数：
+        db：数据库
+    返回：
+        list[models.Attempt，models.User.username]：练习实例和用户名组合
+    """
+    return db.query(models.Attempt, models.User.username).join(models.User, models.Attempt.user_id == models.User.user_id).order_by(models.Attempt.submitted_at.desc()).all()
+
 def get_user_mistake_questions(db: Session, user_id: str):
     """
     获取用户的所有错题

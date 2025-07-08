@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from src.backend import crud, schemas, validators
@@ -48,6 +48,29 @@ def get_attempt_history(
     if current_user.role == "student":
         user_id = current_user.user_id
     return crud.get_user_attempts(db, user_id)
+
+@router.get("/all_history", response_model=List[schemas.AttemptWithUser])
+def get_all_history(
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(get_current_user)
+):
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="只有教师可以获取所有练习历史"
+        )
+    attempts = crud.get_all_attempts(db)
+    return [{
+        "student_sql": a.student_sql,
+        "is_correct": a.is_correct,
+        "error_type": a.error_type,
+        "detailed_errors": a.detailed_errors,
+        "attempt_id": a.attempt_id,
+        "question_id": a.question_id,
+        "user_id": a.user_id,
+        "submitted_at": a.submitted_at,
+        "username": u
+    } for a, u in attempts]
 
 # 获取错题本
 @router.get("/mistakes", response_model=list[schemas.Question])

@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from utils import api_request, display_schema_definition, login
+from utils import api_request, display_schema_definition, login, format_error_detail
 import json
 import logging
 
@@ -11,7 +11,7 @@ def teacher_dashboard():
     st.title("SQL智能练习平台 - 教师端")
 
     # 导航菜单
-    menu = ["题库管理", "样例数据库", "学生练习情况", "错题分析"]
+    menu = ["题库管理", "样例数据库", "学生练习情况"]
     choice = st.sidebar.selectbox("菜单", menu)
 
     knowledge_points = {
@@ -190,10 +190,11 @@ def teacher_dashboard():
     # 学生练习情况
     elif choice == "学生练习情况":
         st.header("学生练习情况分析")
-        attempts = api_request("/attempts/history") or []
+        # 调用新接口获取所有练习记录
+        attempts = api_request("/attempts/all_history") or []
 
         if attempts:
-            # 计算正确率
+            # 正确率计算
             correct_count = sum(1 for a in attempts if a["is_correct"])
             accuracy = correct_count / len(attempts) * 100 if attempts else 0
 
@@ -205,7 +206,7 @@ def teacher_dashboard():
             error_types = {}
             for attempt in attempts:
                 if not attempt["is_correct"]:
-                    error_type = attempt["error_type"] or "unknown"
+                    error_type = attempt.get("error_type", "unknown")
                     error_types[error_type] = error_types.get(error_type, 0) + 1
 
             if error_types:
@@ -217,64 +218,60 @@ def teacher_dashboard():
 
             # 详细记录
             st.subheader("练习记录详情")
-            df = pd.DataFrame([{
-                "学生": attempt["user"]["username"],
-                "题目ID": attempt["question_id"],
-                "提交SQL": attempt["student_sql"],
-                "是否正确": "✓" if attempt["is_correct"] else "✗✗",
-                "错误类型": attempt["error_type"] or "",
-                "提交时间": attempt["submitted_at"]
-            } for attempt in attempts])
-            st.dataframe(df)
-        else:
-            st.info("暂无练习记录")
+            # 收集所有题目ID
+            question_ids = list(set([str(attempt["question_id"]) for attempt in attempts]))
 
-    # 错题分析
-    elif choice == "错题分析":
-        st.header("错题分析报告")
-        questions = api_request("/attempts/mistakes") or []
+            # 批量获取题目详情
+            questions_data = {}
+            if question_ids:
+                # 调用批量获取接口
+                questions_response = api_request(
+                    "/questions/get/batch",
+                    method="POST",
+                    data=question_ids
+                )
+                if questions_response:
+                    questions_data = {q["question_id"]: q for q in questions_response}
 
-        if questions:
-            # 创建错题数据框
-            mistake_data = []
-            for q in questions:
-                # 获取该题目的错误次数
-                attempts = api_request("/attempts/history") or []
-                error_count = len([a for a in attempts
-                                   if a["question_id"] == q["question_id"] and not a["is_correct"]])
-
-                mistake_data.append({
-                    "题目ID": q["question_id"],
-                    "描述": q["description"],
-                    "错误次数": error_count
+            # 添加用户信息和题目信息字段
+            df_data = []
+            for attempt in attempts:
+                question_info = questions_data.get(attempt["question_id"], {})
+                df_data.append({
+                    "学生": attempt["username"],
+                    "题目ID": attempt["question_id"],
+                    "题目标题": question_info.get("question_title", "未知题目"),
+                    "提交SQL": attempt["student_sql"],
+                    "是否正确": "✓" if attempt["is_correct"] else "✗✗",
+                    "错误类型": attempt.get("error_type", ""),
+                    "提交时间": attempt["submitted_at"]
                 })
 
-            df = pd.DataFrame(mistake_data)
-            st.dataframe(df.sort_values("错误次数", ascending=False))
+            df = pd.DataFrame(df_data)
+            st.dataframe(df)
 
-            selected_id = st.selectbox("查看题目详情", [q["question_id"] for q in questions])
-            if selected_id:
-                question = next((q for q in questions if q["question_id"] == selected_id), None)
+            # 题目详情展示
+            question_options = [f"{q['question_id']} - {q['question_title']}" for q in questions_response]
+            selected_option = st.selectbox("查看题目详情", [""] + question_options)
+            if selected_option:
+                # 从选项字符串中提取题目ID
+                selected_id = selected_option.split(" - ")[0]
+                question = questions_data.get(selected_id)
                 if question:
                     st.subheader("题目详情")
+                    st.markdown(f"**{question['question_title']}**")
                     st.markdown(f"**描述**: {question['description']}")
                     st.code(question["answer_sql"], language="sql")
 
-                    # 错误分析
-                    st.subheader("错误分析")
-                    attempts = [a for a in (api_request("/attempts/history") or [])
-                                if a["question_id"] == selected_id and not a["is_correct"]]
-
-                    for attempt in attempts:
-                        with st.expander(f"{attempt['user']['username']} - {attempt['submitted_at']}"):
-                            st.code(attempt["student_sql"], language="sql")
-                            if attempt["error_type"]:
-                                st.warning(f"错误类型: {attempt['error_type']}")
-                            if attempt.get("result_diff"):
-                                st.warning(f"差异: {attempt['result_diff']}")
+                    # 显示数据库模式
+                    schema = api_request(f"/sample-schemas/get/{question['schema_id']}")
+                    if schema:
+                        with st.expander("查看数据库模式"):
+                            st.markdown(display_schema_definition(schema["schema_definition"]))
+                else:
+                    st.warning("未找到题目详情")
         else:
-            st.info("暂无错题记录")
-
+            st.info("暂无练习记录")
 
 # 教师界面入口
 def main():

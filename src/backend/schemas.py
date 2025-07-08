@@ -124,6 +124,9 @@ class Attempt(AttemptBase):
     class Config:
         from_attributes = True
 
+class AttemptWithUser(Attempt):
+    """带用户名的Attempt"""
+    username: str
 
 
 
