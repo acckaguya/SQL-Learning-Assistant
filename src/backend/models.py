@@ -43,7 +43,7 @@ class Question(Base):
     null_handling = Column(Boolean, default=False)                          # 知识点9: NULL处理
     execution_order = Column(Boolean, default=False)                        # 知识点10: 执行顺序
     order_sensitive = Column(Boolean, default=False)                        # 顺序敏感标识
-    schema_id = Column(String, ForeignKey("sample_schemas.schema_id"))      # 关联的模式id
+    schema_id = Column(String, ForeignKey("sample_schemas.schema_id", ondelete="CASCADE"))      # 关联的模式id
     created_at = Column(DateTime)                                           # 创建时间
     updated_at = Column(DateTime)                                           # 更新时间
     
@@ -52,9 +52,9 @@ class Question(Base):
 class Attempt(Base):
     __tablename__ = "attempts"
     
-    attempt_id = Column(String, primary_key=True, index=True)               # attemptid（主码），自动生成
-    user_id = Column(String, ForeignKey("users.user_id"))                   # 用户id
-    question_id = Column(String, ForeignKey("questions.question_id"))       # 问题id
+    attempt_id = Column(String, primary_key=True, index=True)               # attempt_id（主码），自动生成
+    user_id = Column(String, ForeignKey("users.user_id",ondelete="CASCADE"))                    # 用户id
+    question_id = Column(String, ForeignKey("questions.question_id", ondelete="CASCADE"))       # 问题id
     student_sql = Column(Text)                                              # 用户提交的sql语句
     is_correct = Column(Boolean)                                            # 是否正确
     error_type = Column(String)                                             # 错误类型
