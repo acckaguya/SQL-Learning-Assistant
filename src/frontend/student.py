@@ -180,6 +180,22 @@ def student_dashboard():
                 else:
                     st.error("提交答案失败，请检查网络连接")
 
+                # 调用LLM分析答案
+                with st.spinner("AI分析中，请稍等..."):
+                    analysis_result = api_request(
+                        "/analyze/sql",
+                        method="POST",
+                        data=result
+                    )
+                # 显示分析结果
+                if analysis_result:
+                    st.subheader("AI分析报告")
+                    st.markdown("### 1. 正确性分析")
+                    st.write(analysis_result.get("correctness_analysis", "无"))
+                    st.markdown("### 2. 优化建议")
+                    st.write(analysis_result.get("optimization_suggestions", "无"))
+                    st.markdown("### 3. 思路异同")
+                    st.write(analysis_result.get("thinking_difference", "无"))
     # 练习历史
     elif choice == "练习历史":
         st.header("我的练习历史")

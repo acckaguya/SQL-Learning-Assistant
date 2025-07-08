@@ -2,7 +2,7 @@
 FastAPI应用入口，初始化FastAPI应用并注册路由
 """
 from fastapi import FastAPI
-from src.backend.routers import users, questions, attempts, schemas as schema_router
+from src.backend.routers import users, questions, attempts, analyze, schemas as schema_router
 from src.backend.database import engine, Base
 
 
@@ -19,6 +19,7 @@ app.include_router(users.router, prefix="/users")
 app.include_router(questions.router, prefix="/questions")
 app.include_router(attempts.router, prefix="/attempts")
 app.include_router(schema_router.router, prefix="/sample-schemas")
+app.include_router(analyze.router, prefix="/analyze")
 
 
 # 跟路由

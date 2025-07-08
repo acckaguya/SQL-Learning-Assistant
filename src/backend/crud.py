@@ -341,7 +341,7 @@ def create_attempt(db: Session, attempt: schemas.AttemptCreate):
         db：数据库
         attempt：创建练习类
     返回：
-        models.Schema：练习实例
+        models.Attempt：练习实例
     """
     db_attempt = models.Attempt(
         attempt_id=str(uuid.uuid4()),

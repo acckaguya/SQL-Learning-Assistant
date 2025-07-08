@@ -1,6 +1,5 @@
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
-from langchain.schema import StrOutputParser
 from pydantic import BaseModel, Field
 from langchain_core.output_parsers import JsonOutputParser
 import logging
@@ -10,6 +9,14 @@ class QuestionOutput(BaseModel):
     question_title: str = Field(description="题目标题")
     description: str = Field(description="题目描述")
     answer_sql: str = Field(description="参考答案SQL语句")
+
+class SQLAnalysisOutput(BaseModel):
+    """
+    用户sql分析结果模型
+    """
+    correctness_analysis: str = Field(description="答案正确性")
+    optimization_suggestions: str = Field(description="优化建议")
+    thinking_difference: str = Field(description="与标准答案的思路异同")
 
 class LLMHelper:
     def __init__(self, api_key, base_url):
@@ -113,25 +120,82 @@ class LLMHelper:
                 "answer_sql": ""
             }
     
-    def analyze_answer(self, sql: str) -> str:
-        prompt = PromptTemplate.from_template(
-            "分析以下SQL语句的执行逻辑:\n\n{sql}\n\n"
-            "请解释它的功能、关键步骤和可能的输出结果。"
+    def analyze_sql(self, question_description, schema_definition, student_sql, answer_sql, student_result, answer_result, is_correct):
+        """
+        将用户输入和标准答案交予LLM分析（未附上执行结果）
+        参数：
+            question_description：问题描述
+            schema_definition：模式定义
+            student_sql：用户提交的sql
+            answer_sql：标准答案
+        """
+        prompt_template = """
+            你是一位专业的SQL导师，请对学生的SQL答案进行详细分析。要求包括以下部分：
+
+            1. 正确性分析：
+               - 即使系统已经判断了正确性，也请详细解释学生的SQL是否满足题目要求，并指出可能存在的问题（如果有）。
+
+            2. 优化方向：
+               - 从性能（如索引使用）、可读性、简洁性等方面提出优化建议。
+
+            3. 思路异同（与参考答案比较）：
+               - 比较学生SQL和参考答案在实现思路上的异同，例如使用的关键词、子查询、连接方式等。
+
+            
+            数据库模式定义:
+            {schema_definition}
+
+            题目描述：
+            {question_description}
+            
+            题目参考答案:
+            {answer_sql}
+
+            学生提交的SQL:
+            {student_sql}
+            
+            学生提交的SQL查询结果：
+            {student_result}
+            
+            标准答案的SQL查询结果：
+            {answer_result}
+            
+            答案是否正确：
+            {is_correct}
+
+            请以JSON格式输出分析结果，包含以下字段：
+            - "correctness_analysis": 字符串类型，正确性分析内容
+            - "optimization_suggestions": 字符串类型，优化建议
+            - "thinking_difference": 字符串类型，思路异同分析
+            
+            安全性要求：
+            如果结果为False，请不要再分析中透露标准答案SQL的细节，仅仅做提示启发即可。
+            """
+        prompt = PromptTemplate(
+            template=prompt_template,
+            input_variables=["question_description", "schema_definition", "student_sql", "answer_sql", "student_result", "answer_result", "is_correct"]
         )
-        chain = prompt | self.llm | StrOutputParser()
-        return chain.invoke({"sql": sql})
-    
-    def diagnose_error(self, student_sql: str, answer_sql: str, schema_definition: str) -> str:
-        prompt = PromptTemplate.from_template(
-            "学生提交的SQL:\n{student_sql}\n\n"
-            "参考答案:\n{answer_sql}\n\n"
-            "数据库模式:\n{schema}\n\n"
-            "请分析学生SQL可能存在的错误类型（语法错误、逻辑错误、结果不匹配），"
-            "并给出具体的改进建议。"
-        )
-        chain = prompt | self.llm | StrOutputParser()
-        return chain.invoke({
-            "student_sql": student_sql,
-            "answer_sql": answer_sql,
-            "schema": schema_definition
-        })
+
+        analyze_parser = JsonOutputParser(pydantic_object=SQLAnalysisOutput)
+
+        chain = prompt | self.llm | analyze_parser
+
+        try:
+            result = chain.invoke({
+                "question_description": question_description,
+                "schema_definition": schema_definition,
+                "student_sql": student_sql,
+                "answer_sql": answer_sql,
+                "student_result": student_result,
+                "answer_result": answer_result,
+                "is_correct": str(is_correct)
+            })
+            return result
+        except Exception as e:
+            self.logger.error(f"LLM分析失败: {str(e)}")
+            return {
+                "correctness_analysis": "分析失败",
+                "optimization_suggestions": "分析失败",
+                "thinking_difference": "分析失败",
+                "learning_analysis": "分析失败"
+            }

@@ -1,5 +1,4 @@
 import logging
-import pandas as pd
 import sqlparse
 from sql_metadata import Parser
 from sqlalchemy import create_engine, text, exc
