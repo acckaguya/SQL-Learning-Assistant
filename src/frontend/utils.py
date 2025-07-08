@@ -82,3 +82,53 @@ def display_schema_definition(schema_def):
             output.append(df.to_markdown(index=False))
 
     return "\n\n".join(output)
+
+def format_error_detail(error_type, detailed_errors):
+    """格式化错误详情为易于理解的文本"""
+    formatted = []
+
+    if error_type == "syntax_error":
+        formatted.append("### ❌ 语法错误")
+        for error in detailed_errors:
+            if "message" in error:
+                formatted.append(f"- **错误信息**: {error['message']}")
+
+    elif error_type == "semantic_error":
+        formatted.append("### ❌ 语义错误")
+        for error in detailed_errors:
+            if "invalid_tables" in error:
+                formatted.append("#### 表引用错误")
+                for table_err in error["invalid_tables"]:
+                    formatted.append(f"- 表 `{table_err['table']}`: {table_err['reason']}")
+
+            if "invalid_columns" in error:
+                formatted.append("#### 列引用错误")
+                for col_err in error["invalid_columns"]:
+                    formatted.append(f"- 列 `{col_err['column']}`: {col_err['reason']}")
+
+    elif error_type == "result_mismatch":
+        formatted.append("### ❌ 结果不匹配")
+
+        for error in detailed_errors:
+            # 列结构检查错误
+            if "student_columns" in error:
+                formatted.append("#### 结果列不匹配")
+                formatted.append(f"- 你的查询返回列: `{', '.join(error['student_columns'])}`")
+                formatted.append(f"- 参考答案返回列: `{', '.join(error['answer_columns'])}`")
+
+            # 行数不匹配错误
+            elif "student_rows" in error:
+                formatted.append("#### 结果行数不同")
+                formatted.append(f"- 你的查询返回 {error['student_rows']} 行")
+                formatted.append(f"- 参考答案返回 {error['answer_rows']} 行")
+
+            # 行内容不匹配错误
+            elif "comparison_details" in error:
+                formatted.append("#### 行数据不匹配")
+                for mismatch in error["comparison_details"]:
+                    formatted.append(f"- 第 {mismatch['row']} 行:")
+                    for diff in mismatch["differences"]:
+                        formatted.append(
+                            f"  - 列 `{diff['column']}`: 你的值 `{diff['student_value']}`, 参考答案值 `{diff['answer_value']}`")
+
+    return "\n".join(formatted)
