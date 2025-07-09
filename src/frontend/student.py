@@ -1,3 +1,4 @@
+import requests
 import streamlit as st
 from utils import api_request, display_schema_definition, login, format_error_detail
 
@@ -267,16 +268,50 @@ def main():
 
 def login_form():
     st.title("学生登录")
-    username = st.text_input("用户名")
-    password = st.text_input("密码", type="password")
-    if st.button("登录"):
-        if login(username, password):
-            if st.session_state.user["role"] == "student":
-                st.experimental_rerun()
+    tab_login, tab_register = st.tabs(["登录", "创建用户"])
+
+    with tab_login:
+        username = st.text_input("用户名", key="login_username")
+        password = st.text_input("密码", type="password", key="login_password")
+        if st.button("登录"):
+            if login(username, password):
+                if st.session_state.user["role"] == "student":
+                    st.experimental_rerun()
+                else:
+                    st.error("请使用学生账号登录")
             else:
-                st.error("请使用学生账号登录")
-        else:
-            st.error("登录失败")
+                st.error("登录失败")
+
+    with tab_register:
+        # 添加注册表单
+        st.subheader("创建新用户")
+        new_username = st.text_input("用户名", key="register_username")
+        new_password = st.text_input("密码", type="password", key="register_password")
+        confirm_password = st.text_input("确认密码", type="password", key="confirm_password")
+        role = "student"
+
+        if st.button("注册"):
+            if new_password != confirm_password:
+                st.error("两次输入的密码不一致")
+            elif not new_username or not new_password:
+                st.error("用户名和密码不能为空")
+            else:
+                response = requests.post(
+                    "http://localhost:8000/users/register",
+                    headers={
+                        "Content-Type": "application/json",
+                        "accept": "application/json"
+                    },
+                    json={
+                        "username": new_username,
+                        "password": new_password,
+                        "role": role
+                    }
+                )
+                if response:
+                    st.success("用户创建成功！请使用新账号登录")
+                else:
+                    st.error("用户创建失败")
 
 
 if __name__ == "__main__":

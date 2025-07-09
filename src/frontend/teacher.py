@@ -3,6 +3,7 @@ import pandas as pd
 from utils import api_request, display_schema_definition, login, format_error_detail
 import json
 import logging
+import requests
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -277,26 +278,57 @@ def teacher_dashboard():
 def main():
     if "user" not in st.session_state or st.session_state.user.get("role") != "teacher":
         st.warning("请以教师身份登录")
-        return
+        login_form()
+    else:
+        teacher_dashboard()
 
-    teacher_dashboard()
 
+def login_form():
+    st.title("教师登录")
+    tab_login, tab_register = st.tabs(["登录", "创建用户"])
+
+    with tab_login:
+        username = st.text_input("用户名", key="login_username")
+        password = st.text_input("密码", type="password", key="login_password")
+        if st.button("登录"):
+            if login(username, password):
+                if st.session_state.user["role"] == "teacher":
+                    st.experimental_rerun()
+                else:
+                    st.error("请使用教师账号登录")
+            else:
+                st.error("登录失败")
+
+    with tab_register:
+        # 添加注册表单
+        st.subheader("创建新用户")
+        new_username = st.text_input("用户名", key="register_username")
+        new_password = st.text_input("密码", type="password", key="register_password")
+        confirm_password = st.text_input("确认密码", type="password", key="confirm_password")
+        role = "teacher"
+
+        if st.button("注册"):
+            if new_password != confirm_password:
+                st.error("两次输入的密码不一致")
+            elif not new_username or not new_password:
+                st.error("用户名和密码不能为空")
+            else:
+                response = requests.post(
+                    "http://localhost:8000/users/register",
+                    headers={
+                        "Content-Type": "application/json",
+                        "accept": "application/json"
+                    },
+                    json={
+                        "username": new_username,
+                        "password": new_password,
+                        "role": role
+                    }
+                )
+                if response:
+                    st.success("用户创建成功！请使用新账号登录")
+                else:
+                    st.error("用户创建失败")
 
 if __name__ == "__main__":
-    if "user" not in st.session_state:
-        st.title("教师登录")
-        with st.form(key="login_form"):
-            username = st.text_input("用户名")
-            password = st.text_input("密码", type="password")
-            submit_button = st.form_submit_button("登录")
-
-            if submit_button:
-                if login(username, password):
-                    if st.session_state.user["role"] == "teacher":
-                        st.experimental_rerun()
-                    else:
-                        st.error("⚠️ 请使用教师账号登录")
-                else:
-                    st.error("❌❌ 登录失败，请检查凭证")
-    else:
-        main()
+    main()
