@@ -1,7 +1,3 @@
-使用uv管理python环境
-```
-uv add -r requirements.txt
-```
 # SQL智能学习助手
 
 ## 项目概述
@@ -12,16 +8,17 @@ uv add -r requirements.txt
 - 数据库：PostgreSQL存储数据
 
 ## 环境要求
-- Python 
-- PostgreSQL 
+- Python 3.12
+- PostgreSQL 15
 - LLM APIKEY
-- uv
+- uv 0.7.9
 
 ## 安装步骤
 
 ### 1. 克隆仓库
 ```
 git clone https://github.com/acckaguya/SQL-Learning-Assistant.git
+cd SQL-Learning-Assistant
 ```
 
 ### 2. 创建虚拟环境
@@ -76,4 +73,4 @@ streamlit run src\frontend\student.py
 - 生成和编辑SQL题目
 - 管理数据库模式
 - 查看学生练习情况
-- 分析班级整体正确率
+- 分析学生整体正确率
