@@ -153,14 +153,27 @@ def student_dashboard():
             st.subheader("详细记录")
             expanded_attempt_id = st.session_state.get("expanded_attempt_id", None)
 
+            # 提取所有题目ID并批量获取题目信息
+            question_ids = list(set([str(attempt["question_id"]) for attempt in attempts]))
+            questions_data = {}
+            if question_ids:
+                questions_response = api_request(
+                    "/questions/get/batch",
+                    method="POST",
+                    data=question_ids
+                )
+                if questions_response:
+                    questions_data = {q["question_id"]: q for q in questions_response}
+
             for i, attempt in enumerate(attempts):
-                # 获取题目详情
-                question = api_request(f"/questions/get/{attempt['question_id']}") or {}
+                # 从批量获取的数据中获取题目详情
+                question = questions_data.get(attempt["question_id"], {})
+                question_description = question.get("description", "未知题目")
 
                 with st.container():
                     col1, col2, col3 = st.columns([2, 1, 1])
                     with col1:
-                        st.markdown(f"**题目**: {question.get('description', '未知题目')[:50]}...")
+                        st.markdown(f"**题目**: {question_description[:50]}...")
                     with col2:
                         st.markdown(f"**结果**: {'✅ 正确' if attempt['is_correct'] else '❌ 错误'}")
                     with col3:
