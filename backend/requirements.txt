@@ -1,0 +1,23 @@
+# 后端依赖
+fastapi==0.110.2
+uvicorn==0.29.0
+python-dotenv==1.0.1
+sqlalchemy==2.0.29
+psycopg2-binary==2.9.9
+passlib==1.7.4
+python-jose==3.3.0
+pandas==2.2.2
+sqlparse==0.5.0
+sql-metadata==2.13.0
+slowapi==0.1.8
+redis==5.0.3
+pydantic-settings
+pydantic
+langchain
+langchain-openai
+bcrypt==4.0.1
+
+# 前端依赖
+streamlit==1.36.0
+requests==2.31.0
+pandas==2.2.2
