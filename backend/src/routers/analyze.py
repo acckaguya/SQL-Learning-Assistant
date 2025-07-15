@@ -42,7 +42,7 @@ def analyze_sql(
     # 初始化LLMHelper
     llm_helper = llm_utils.LLMHelper(settings.OPENAI_API_KEY, settings.MODEL_BASE_URL)
 
-    # 调用LLM进行分析
+    # 调用LLM对用户sql和大模型sql展开分析
     analysis_result = llm_helper.analyze_sql(
         question_description=str(question.description),
         schema_definition=str(schema.schema_definition),
